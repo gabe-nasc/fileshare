@@ -10,40 +10,74 @@
 #include <errno.h>
 #include "biblioteca.h"
 
-int main(int argc, char *argv[])
+void reply_client(int option, int socket)
 {
+    if (option == 1)
+    {
+        int n = recvInt(socket);
+        printf("Received: %d\n", n);
+    }
+    else if (option == 2)
+    {
+        char *str = recvString(socket);
+        printf("Received: %s\n", str);
+    }
+    // else if (option == 4)
+    // {
+    //     printf("Listing cloud files...\n");
+    //     list_cloud_files();
+    // }
+    // else if (option == 5)
+    // {
+    //     char filename[MAXRCVLEN + 1];
+    //     printf("Enter a filename: ");
+    //     scanf("%s", filename);
+    //     download_file(filename, connection);
+    // }
+    else if (option == 6)
+    {
+        char *str = recvString(socket);
+        printf("Received: %s\n", str);
+    }
+    else
+    {
+        printf("Invalid option\n");
+    }
+}
 
-    if (argc != 2)
+int start_listening(int port)
+{
+    int mysocket;
+    struct sockaddr_in dest;
+
+    socklen_t socksize = sizeof(struct sockaddr_in);
+
+    memset(&dest, 0, sizeof(dest)); /* zero the struct */
+    dest.sin_family = AF_INET;
+    dest.sin_addr.s_addr = htonl(INADDR_ANY); /* set destination IP number - localhost, */
+    dest.sin_port = htons(port);              /* set destination port number */
+
+    mysocket = socket(AF_INET, SOCK_STREAM, 0);
+
+    int bindResult = bind(mysocket, (struct sockaddr *)&dest, sizeof(struct sockaddr_in));
+
+    if (bindResult == -1)
     {
 
-        printf("USAGE: server port_number\n");
+        printf("SERVER ERROR: %s\n", strerror(errno));
 
         return EXIT_FAILURE;
     }
 
-    char *msg[5] = {"Msg1\n", "Msg2\n", "Msg3\n", "Msg4\n", "Msg5\n"};
+    int listenResult = listen(mysocket, 1);
 
-    srand(time(NULL));
+    if (listenResult == -1)
+    {
 
-    struct sockaddr_in dest; /* socket info about the machine connecting to us */
-    struct sockaddr_in serv; /* socket info about our server */
-    int mysocket;            /* socket used to listen for incoming connections */
-    socklen_t socksize = sizeof(struct sockaddr_in);
+        printf("SERVER ERROR: %s\n", strerror(errno));
 
-    memset(&serv, 0, sizeof(serv));           /* zero the struct before filling the fields */
-    serv.sin_family = AF_INET;                /* set the type of connection to TCP/IP */
-    serv.sin_addr.s_addr = htonl(INADDR_ANY); /* set our address to any interface */
-    serv.sin_port = htons(atoi(argv[1]));     /* set the server port number */
-
-    mysocket = socket(AF_INET, SOCK_STREAM, 0);
-
-    /* bind serv information to mysocket */
-    bind(mysocket, (struct sockaddr *)&serv, sizeof(struct sockaddr));
-
-    /* start listening, allowing a queue of up to 1 pending connection */
-    listen(mysocket, 1);
-
-    printf("Server is waiting for connections on port:%s\n", argv[1]);
+        return EXIT_FAILURE;
+    }
 
     int consocket = accept(mysocket, (struct sockaddr *)&dest, &socksize);
 
@@ -51,23 +85,35 @@ int main(int argc, char *argv[])
     {
         printf("Incoming connection from %s - sending welcome\n", inet_ntoa(dest.sin_addr));
 
-        // int randomMessage = rand() % 5;
+        reply_client(recvInt(consocket), consocket);
 
-        char *nome = "Gabriel Amorim Nascimento";
-
-        sendInt(5, consocket);
-        sendDouble(3.14, consocket);
-        sendString(read_file("Makefile"), consocket);
-        // sendVoid(25, 1, consocket);
-
-        int resultInt = recvInt(consocket);
-        printf("%d\n", resultInt);
-
-        // send(consocket, msg[randomMessage], strlen(msg[randomMessage]) * sizeof(char), 0);
         close(consocket);
         consocket = accept(mysocket, (struct sockaddr *)&dest, &socksize);
     }
 
     close(mysocket);
+}
+
+int main(int argc, char *argv[])
+{
+    int port = 5050;
+    if (argc != 2)
+    {
+
+        printf("Using default port: 5050\n");
+    }
+    else
+    {
+        port = atoi(argv[1]);
+    }
+
+    char *msg[5] = {"Msg1\n", "Msg2\n", "Msg3\n", "Msg4\n", "Msg5\n"};
+
+    srand(time(NULL));
+
+    printf("Server is waiting for connections on port: %d\n", port);
+
+    start_listening(port);
+
     return EXIT_SUCCESS;
 }

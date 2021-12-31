@@ -11,17 +11,8 @@
 
 #define MAXRCVLEN 500
 
-int main(int argc, char *argv[])
+int connect_to_server(int port)
 {
-
-    if (argc != 2)
-    {
-
-        printf("USAGE: server port_number\n");
-
-        return EXIT_FAILURE;
-    }
-
     char buffer[MAXRCVLEN + 1]; /* +1 so we can add null terminator */
     bzero(buffer, MAXRCVLEN + 1);
     int len, mysocket;
@@ -32,7 +23,7 @@ int main(int argc, char *argv[])
     memset(&dest, 0, sizeof(dest)); /* zero the struct */
     dest.sin_family = AF_INET;
     dest.sin_addr.s_addr = htonl(INADDR_LOOPBACK); /* set destination IP number - localhost, 127.0.0.1*/
-    dest.sin_port = htons(atoi(argv[1]));          /* set destination port number */
+    dest.sin_port = htons(port);                   /* set destination port number */
 
     int connectResult = connect(mysocket, (struct sockaddr *)&dest, sizeof(struct sockaddr_in));
 
@@ -44,27 +35,103 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    int resultInt = recvInt(mysocket);
-    double resultDouble = recvDouble(mysocket);
-    char *resultString = recvString(mysocket);
-    // int resultVoid = (int *)recvVoid(mysocket);
+    return mysocket;
+}
 
-    printf("%d\n", resultInt);
-    printf("%f\n", resultDouble);
-    printf("%s\n", resultString);
-    // printf("%d\n", resultVoid);
+int user_menu(int port)
+{
+    printf("Choose an option:\n1 - Send Integer\n2 - Send String\n3 - List Local Files\n4 - List Cloud Files\n5 - Download File\n6 - Upload File\n7 - Exit\n");
+    int option;
+    scanf("%d", &option);
 
-    sendInt(20, mysocket);
+    if (option < 1 || option > 7)
+    {
+        printf("Invalid option\n");
+        return -1;
+    }
 
-    // len = recv(mysocket, buffer, MAXRCVLEN, 0);
+        if (option == 7)
+    {
+        printf("Exiting...\n");
+    }
+    else if (option == 1)
+    {
+        int n;
+        printf("Enter an integer: ");
+        scanf("%d", &n);
 
-    /* We have to null terminate the received data ourselves */
-    // buffer[len] = '\0';
+        int connection = connect_to_server(port);
+        sendInt(option, connection);
+        sendInt(n, connection);
+        close(connection);
 
-    // printf("Received %s (%d bytes).\n", buffer, len);
-    // list_directory(".");
-    // char *nome = read_file("Makefile");
-    // printf("%s\n", nome);
-    close(mysocket);
+        printf("Sent %d\n", n);
+    }
+    else if (option == 2)
+    {
+        char str[MAXRCVLEN + 1];
+        printf("Enter a string: ");
+        scanf("%s", str);
+
+        int connection = connect_to_server(port);
+        sendInt(option, connection);
+        sendString(str, connection);
+        close(connection);
+
+        printf("Sent %s\n", str);
+    }
+    else if (option == 3)
+    {
+        printf("Listing local files...\n");
+        list_directory(".");
+    }
+    // else if (option == 4)
+    // {
+    //     printf("Listing cloud files...\n");
+    //     list_cloud_files();
+    // }
+    // else if (option == 5)
+    // {
+    //     char filename[MAXRCVLEN + 1];
+    //     printf("Enter a filename: ");
+    //     scanf("%s", filename);
+    //     download_file(filename, connection);
+    // }
+    else if (option == 6)
+    {
+        char filename[MAXRCVLEN + 1];
+        printf("Enter a filename: ");
+        scanf("%s", filename);
+        char *content = read_file(filename);
+
+        int connection = connect_to_server(port);
+        sendInt(option, connection);
+        sendString(content, connection);
+        close(connection);
+    }
+
+    return option;
+}
+
+int main(int argc, char *argv[])
+{
+
+    int port = 5050;
+    if (argc != 2)
+    {
+
+        printf("Using default port: 5050\n");
+    }
+    else
+    {
+        int port = atoi(argv[1]);
+    }
+
+    int option = 0;
+    while (option != 7)
+    {
+        option = user_menu(port);
+    }
+
     return EXIT_SUCCESS;
 }
