@@ -36,8 +36,13 @@ void reply_client(int option, int socket)
     // }
     else if (option == 6)
     {
-        char *str = recvString(socket);
-        printf("Received: %s\n", str);
+        unsigned char *content = recvVoid(socket);
+        write_file("files/test", content);
+    }
+    else if (option == 8)
+    {
+        int n = *(int *)recvVoid(socket);
+        printf("Received: %d\n", n);
     }
     else
     {

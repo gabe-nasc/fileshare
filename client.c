@@ -40,17 +40,17 @@ int connect_to_server(int port)
 
 int user_menu(int port)
 {
-    printf("Choose an option:\n1 - Send Integer\n2 - Send String\n3 - List Local Files\n4 - List Cloud Files\n5 - Download File\n6 - Upload File\n7 - Exit\n");
+    printf("Choose an option:\n1 - Send Integer\n2 - Send String\n3 - List Local Files\n4 - List Cloud Files\n5 - Download File\n6 - Upload File\n7 - Exit\n8 - Void\n");
     int option;
     scanf("%d", &option);
 
-    if (option < 1 || option > 7)
+    if (option < 1 || option > 8)
     {
         printf("Invalid option\n");
         return -1;
     }
 
-        if (option == 7)
+    if (option == 7)
     {
         printf("Exiting...\n");
     }
@@ -71,7 +71,7 @@ int user_menu(int port)
     {
         char str[MAXRCVLEN + 1];
         printf("Enter a string: ");
-        scanf("%s", str);
+        scanf(" %[^\n]%*c", str);
 
         int connection = connect_to_server(port);
         sendInt(option, connection);
@@ -102,11 +102,23 @@ int user_menu(int port)
         char filename[MAXRCVLEN + 1];
         printf("Enter a filename: ");
         scanf("%s", filename);
-        char *content = read_file(filename);
+        unsigned char *content = read_file(filename);
 
         int connection = connect_to_server(port);
         sendInt(option, connection);
-        sendString(content, connection);
+        sendVoid(content, 500, connection);
+        close(connection);
+    }
+
+    else if (option == 8)
+    {
+        int n;
+        printf("Enter an integer: ");
+        scanf("%d", &n);
+
+        int connection = connect_to_server(port);
+        sendInt(option, connection);
+        sendVoid(&n, sizeof(int), connection);
         close(connection);
     }
 

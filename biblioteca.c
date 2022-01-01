@@ -89,24 +89,60 @@ void list_directory(char *path)
     }
 };
 
-char *read_file(char *path)
+// char *read_file(char *path)
+// {
+//     FILE *file = fopen(path, "r");
+//     if (file == NULL)
+//     {
+//         perror("");
+//         return NULL;
+//     }
+
+//     fseek(file, 0, SEEK_END);
+//     int size = ftell(file);
+//     rewind(file);
+
+//     char *string = (char *)calloc(size + 1, sizeof(char));
+//     fread(string, 1, size, file);
+//     string[size] = '\0';
+
+//     fclose(file);
+
+//     return string;
+// };
+
+unsigned char *read_file(char *path)
 {
     FILE *file = fopen(path, "r");
     if (file == NULL)
     {
         perror("");
-        return NULL;
+        return 0;
     }
 
     fseek(file, 0, SEEK_END);
     int size = ftell(file);
     rewind(file);
 
-    char *string = (char *)calloc(size + 1, sizeof(char));
-    fread(string, 1, size, file);
-    string[size] = '\0';
+    unsigned char *content = (unsigned char *)calloc(size + 1, sizeof(unsigned char));
+    fread(content, 1, size, file);
+    // string[size] = '\0';
 
     fclose(file);
 
-    return string;
+    return content;
+};
+
+void write_file(char *path, unsigned char *content)
+{
+    FILE *file = fopen(path, "w");
+    if (file == NULL)
+    {
+        perror("");
+        return;
+    }
+
+    fwrite(content, 1, strlen(content), file);
+
+    fclose(file);
 };
