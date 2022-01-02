@@ -138,11 +138,30 @@ void write_file(char *path, unsigned char *content)
     FILE *file = fopen(path, "w");
     if (file == NULL)
     {
-        perror("");
+        perror("Oops! File could not be opened.\n");
         return;
     }
 
     fwrite(content, 1, strlen(content), file);
 
     fclose(file);
+};
+
+void sendFile(char *path, int socket)
+{
+    printf("Sending file %s\n", path);
+    unsigned char *content = read_file(path);
+    sendString(path, socket);
+    sendVoid(content, strlen(content), socket);
+};
+
+char *recvFile(int socket)
+{
+    char *string = recvString(socket);
+    printf("Receiving file %s\n", string);
+
+    unsigned char *content = recvVoid(socket);
+    write_file(string, content);
+
+    return string;
 };

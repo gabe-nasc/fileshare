@@ -17,4 +17,4 @@ unsigned char *read_file(char *path);
 void write_file(char *path, unsigned char *content);
 
 void sendFile(char *path, int socket);
-void recvFile(char *path, int socket);
+char *recvFile(int socket);
