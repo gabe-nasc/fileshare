@@ -35,5 +35,6 @@ jobs:
         
       
       - name: if statement
-        if: ${{ startsWith(github.event.head_commit.message, 'BUILD') == false }}
+        if: ${{ !startsWith(github.event.head_commit.message, 'BUILD') }}
+#         if: ${{ startsWith(github.event.head_commit.message, 'BUILD') == false }}
         run: echo Nope!
