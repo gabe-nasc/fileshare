@@ -29,12 +29,5 @@ jobs:
       - name: Run a one-line script
         run: echo Hello, world!
       
-      - name: if statement
-        if: ${{ startsWith(github.event.head_commit.message, 'BUILD') == true }}
-        run: echo Build this!
-        
-      
-      - name: if statement
-        if: ${{ !startsWith(github.event.head_commit.message, 'BUILD') }}
-#         if: ${{ startsWith(github.event.head_commit.message, 'BUILD') == false }}
-        run: echo Nope!
+      - name: Build all
+        run: make
