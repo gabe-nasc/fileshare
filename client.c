@@ -101,14 +101,12 @@ int user_menu(int port)
     {
         char filename[MAXRCVLEN + 1];
         printf("Enter a filename: ");
-        scanf("%s", filename);
-        // unsigned char *content = read_file(filename);
+        scanf(" %[^\n]%*c", filename);
 
         int connection = connect_to_server(port);
         sendInt(option, connection);
         sendFile(filename, connection);
-        // sendInt(option, connection);
-        // sendVoid(content, 500, connection);
+
         close(connection);
     }
 

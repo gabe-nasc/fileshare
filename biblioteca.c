@@ -12,6 +12,19 @@
 
 #include "biblioteca.h"
 
+#define BUFFER_SIZE 500
+
+unsigned char *get_array_slice(unsigned char *array, int start, int end)
+{
+    unsigned char *slice = (unsigned char *)calloc(BUFFER_SIZE, sizeof(unsigned char));
+    for (int i = start; i < end; i++)
+    {
+        slice[i - start] = array[i];
+    }
+
+    return slice;
+};
+
 void sendInt(int number, int socket)
 {
     send(socket, &number, sizeof(int), 0);
@@ -89,49 +102,28 @@ void list_directory(char *path)
     }
 };
 
-// char *read_file(char *path)
+// unsigned char *read_file(char *path)
 // {
 //     FILE *file = fopen(path, "r");
 //     if (file == NULL)
 //     {
 //         perror("");
-//         return NULL;
+//         return 0;
 //     }
 
 //     fseek(file, 0, SEEK_END);
 //     int size = ftell(file);
+//     printf("Size: %d\n", size);
 //     rewind(file);
 
-//     char *string = (char *)calloc(size + 1, sizeof(char));
-//     fread(string, 1, size, file);
-//     string[size] = '\0';
+//     unsigned char *content = (unsigned char *)calloc(size + 1, sizeof(unsigned char));
+
+//     fread(content, 1, size, file);
 
 //     fclose(file);
 
-//     return string;
+//     return content;
 // };
-
-unsigned char *read_file(char *path)
-{
-    FILE *file = fopen(path, "r");
-    if (file == NULL)
-    {
-        perror("");
-        return 0;
-    }
-
-    fseek(file, 0, SEEK_END);
-    int size = ftell(file);
-    rewind(file);
-
-    unsigned char *content = (unsigned char *)calloc(size + 1, sizeof(unsigned char));
-    fread(content, 1, size, file);
-    // string[size] = '\0';
-
-    fclose(file);
-
-    return content;
-};
 
 void write_file(char *path, unsigned char *content)
 {
@@ -150,9 +142,55 @@ void write_file(char *path, unsigned char *content)
 void sendFile(char *path, int socket)
 {
     printf("Sending file %s\n", path);
-    unsigned char *content = read_file(path);
+
+    // Open file
+    FILE *file = fopen(path, "r");
+    if (file == NULL)
+    {
+        perror("");
+        return;
+    }
+
+    // Get file size
+    fseek(file, 0, SEEK_END);
+    unsigned int nbytes = ftell(file);
+    printf("Size: %d\n", nbytes);
+    rewind(file);
+
+    // Allocate memory for file contents
+    void *content = (void *)calloc(nbytes + 1, sizeof(void));
+
+    // Read file contents
+    fread(content, 1, nbytes, file);
+
+    // Close file
+    fclose(file);
+
+    // Send file path to receiver
     sendString(path, socket);
-    sendVoid(content, strlen(content), socket);
+
+    // Allocate memory for a slice of the file contents, the size of the slice is determined by BUFFER_SIZE
+    void *content_slice = (void *)calloc(BUFFER_SIZE, sizeof(void));
+
+    // Calculate number of slices
+    unsigned int nslices = (nbytes / BUFFER_SIZE) + 1;
+    if (nslices == 0)
+    {
+        nslices = 1;
+    }
+
+    printf("Slices: %d\n", nslices);
+
+    // Send number of slices to receiver
+    sendInt(nslices, socket);
+
+    // For each slice, send slice to receiver
+    for (size_t i = 0; i < nslices; i++)
+    {
+        printf("Sending slice %ld\n", i);
+        content_slice = get_array_slice(content, i * BUFFER_SIZE, (i + 1) * BUFFER_SIZE);
+        sendVoid(content_slice, BUFFER_SIZE, socket);
+    }
 };
 
 char *recvFile(int socket)
@@ -160,8 +198,26 @@ char *recvFile(int socket)
     char *string = recvString(socket);
     printf("Receiving file %s\n", string);
 
-    unsigned char *content = recvVoid(socket);
+    int nslices = recvInt(socket);
+
+    // TODO: Mudar para void *
+    void *content_slice = (void *)calloc(BUFFER_SIZE, sizeof(void));
+    void *content = (void *)calloc(BUFFER_SIZE * nslices, sizeof(void));
+
+    for (size_t i = 0; i < nslices; i++)
+    {
+        printf("Receiving slice %ld\n", i);
+        content_slice = recvVoid(socket);
+        memcpy(content + i * BUFFER_SIZE, content_slice, BUFFER_SIZE);
+    }
+
+    unsigned int content_size = (unsigned int)strlen((char *)content);
+    printf("File size: %d\n", content_size);
     write_file(string, content);
 
     return string;
 };
+
+// TODO: Descobrir o filesize
+// TODO: Criar arquivo em branco com este tamanho
+// TODO: Utilizar o pwrite (Uma thread por parte do arquivo)

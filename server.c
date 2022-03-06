@@ -38,6 +38,7 @@ void reply_client(int option, int socket)
     {
         char *path = recvFile(socket);
         printf("Received: %s\n", path);
+        // printf("Received");
     }
     else if (option == 8)
     {
