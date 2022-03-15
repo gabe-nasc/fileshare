@@ -35,7 +35,7 @@ void sendInt(int number, int socket)
         bytes_sent += send(socket, &number + bytes_sent, sizeof(int) - bytes_sent, 0);
     }
 
-    printf("Sent %d bytes\n", bytes_sent);
+    // printf("Sent %d bytes\n", bytes_sent);
 };
 
 int recvInt(int socket)
@@ -47,7 +47,7 @@ int recvInt(int socket)
         bytes_received += recv(socket, &number + bytes_received, sizeof(int) - bytes_received, 0);
     }
 
-    printf("Received %d bytes\n", bytes_received);
+    // printf("Received %d bytes\n", bytes_received);
     return number;
 };
 
@@ -59,7 +59,7 @@ void sendDouble(double number, int socket)
         bytes_sent += send(socket, &number + bytes_sent, sizeof(double) - bytes_sent, 0);
     }
 
-    printf("Sent %d bytes\n", bytes_sent);
+    // printf("Sent %d bytes\n", bytes_sent);
 };
 
 double recvDouble(int socket)
@@ -73,7 +73,7 @@ double recvDouble(int socket)
         bytes_sent += recv(socket, &number + bytes_sent, sizeof(double) - bytes_sent, 0);
     }
 
-    printf("Received %d bytes\n", bytes_sent);
+    // printf("Received %d bytes\n", bytes_sent);
     return number;
 };
 
@@ -88,7 +88,7 @@ void sendString(char *string, int socket)
         bytes_sent += send(socket, string + bytes_sent, sizeof(char) * size - bytes_sent, 0);
     }
 
-    printf("Sent %d bytes\n", bytes_sent);
+    // printf("Sent %d bytes\n", bytes_sent);
 };
 
 char *recvString(int socket)
@@ -97,11 +97,11 @@ char *recvString(int socket)
     char *string = (char *)calloc(size, sizeof(char));
 
     int bytes_received = recv(socket, string, size, 0);
-    printf("Received %d bytes\n", bytes_received);
+    // printf("Received %d bytes\n", bytes_received);
     while (bytes_received < size)
     {
         bytes_received += recv(socket, string + bytes_received, size - bytes_received, 0);
-        printf("Received %d bytes\n", bytes_received);
+        // printf("Received %d bytes\n", bytes_received);
     }
 
     string[size] = '\0';
@@ -118,7 +118,7 @@ void sendVoid(void *voidPointer, int nbytes, int socket)
         bytes_sent += send(socket, voidPointer + bytes_sent, nbytes - bytes_sent, 0);
     }
 
-    printf("Sent %d bytes\n", bytes_sent);
+    // printf("Sent %d bytes\n", bytes_sent);
     // send(socket, voidPointer, nbytes, 0);
 };
 
@@ -128,11 +128,11 @@ void *recvVoid(int socket)
     void *voidPointer = (void *)calloc(nbytes, sizeof(void));
 
     int bytes_received = recv(socket, voidPointer, nbytes, 0);
-    printf("Received %d bytes\n", bytes_received);
+    // printf("Received %d bytes\n", bytes_received);
     while (bytes_received < nbytes)
     {
         bytes_received += recv(socket, voidPointer + bytes_received, nbytes - bytes_received, 0);
-        printf("Received %d bytes\n", bytes_received);
+        // printf("Received %d bytes\n", bytes_received);
     }
 
     return voidPointer;
@@ -157,6 +157,62 @@ void list_directory(char *path)
     }
 };
 
+// Send a list of files present in PATH
+void send_files_list(char *path, int socket)
+{
+    DIR *dir;
+    struct dirent *ent;
+
+    int files_count = 0;
+    if ((dir = opendir(path)) != NULL)
+    {
+        while ((ent = readdir(dir)) != NULL)
+        {
+            if (ent->d_type == DT_REG)
+            {
+                files_count++;
+            }
+        }
+        closedir(dir);
+    }
+    else
+    {
+        perror("");
+        return;
+    }
+
+    sendInt(files_count, socket);
+
+    if ((dir = opendir(path)) != NULL)
+    {
+        while ((ent = readdir(dir)) != NULL)
+        {
+            printf("%s\n", ent->d_name);
+            sendVoid(ent->d_name, strlen(ent->d_name) * sizeof(char), socket);
+        }
+        closedir(dir);
+        sendVoid(0, sizeof(int), socket);
+    }
+    else
+    {
+        perror("");
+        return;
+    }
+};
+
+void list_server_files(int socket)
+{
+    sendInt(4, socket); // 4 = list_server_files
+    int nfiles = recvInt(socket);
+    printf("%d files\n", nfiles);
+    for (int i = 0; i < nfiles; i++)
+    {
+        char *filename = recvVoid(socket);
+        printf("%s\n", filename);
+        free(filename);
+    }
+};
+
 void write_file(char *path, unsigned char *content)
 {
     FILE *file = fopen(path, "w");
@@ -170,86 +226,6 @@ void write_file(char *path, unsigned char *content)
 
     fclose(file);
 };
-
-// void sendFile(char *path, int socket)
-// {
-//     printf("Sending file %s\n", path);
-
-//     // Open file
-//     int file = open(path, O_RDONLY);
-//     if (file == NULL)
-//     {
-//         perror("SHIT");
-//         return;
-//     }
-
-//     // Get file size
-//     fseek(file, 0, SEEK_END);
-//     unsigned int nbytes = ftell(file);
-//     printf("Size: %d\n", nbytes);
-//     rewind(file);
-
-//     // Send file path to receiver
-//     sendString(path, socket);
-
-//     // Allocate memory for a slice of the file contents, the size of the slice is determined by BUFFER_SIZE
-//     void *content_slice = (void *)calloc(BUFFER_SIZE, sizeof(void));
-
-//     // Calculate number of slices
-//     unsigned int nslices = (nbytes / BUFFER_SIZE) + 1;
-//     if (nslices == 0)
-//     {
-//         nslices = 1;
-//     }
-
-//     printf("Slices: %d\n", nslices);
-
-//     // Send number of slices to receiver
-//     sendInt(nslices, socket);
-
-//     // For each slice, send slice to receiver
-//     for (size_t i = 0; i < nslices; i++)
-//     {
-//         // Allocate memory for file contents
-//         void *content = (void *)calloc(BUFFER_SIZE + 1, sizeof(void));
-
-//         // Read file contents
-//         pread(file, content, nbytes, BUFFER_SIZE * i);
-
-//         printf("Sending slice %ld\n", i);
-//         content_slice = get_array_slice(content, i * BUFFER_SIZE, (i + 1) * BUFFER_SIZE);
-//         sendVoid(content_slice, BUFFER_SIZE, socket);
-//     }
-
-//     // Close file
-//     close(file);
-// };
-
-// char *recvFile(int socket)
-// {
-//     char *string = recvString(socket);
-//     printf("Receiving file %s\n", string);
-
-//     int nslices = recvInt(socket);
-
-//     // TODO: Mudar para void *
-//     void *content_slice = (void *)calloc(BUFFER_SIZE, sizeof(void));
-//     void *content = (void *)calloc(BUFFER_SIZE * nslices, sizeof(void));
-
-//     for (size_t i = 0; i < nslices; i++)
-//     {
-//         printf("Receiving slice %ld\n", i);
-//         content_slice = recvVoid(socket);
-//         memcpy(content + i * BUFFER_SIZE, content_slice, BUFFER_SIZE);
-//     }
-
-//     unsigned int content_size = (unsigned int)strlen((char *)content);
-//     printf("File size: %d\n", content_size);
-//     write_file(string, content);
-
-//     return string;
-// };
-
 // Will use pread instead of fread to read file contents because fread will read the whole file into memory
 // and pread will read the file contents in chunks, also, fread is not thread safe
 void altSendFile(char *path, int socket)
@@ -333,7 +309,25 @@ char *altRecvFile(int socket)
     close(file);
 
     return file_path;
-}
+};
+
+void download_file(char *path, int socket, int option)
+{
+    sendInt(option, socket);
+    sendString(path, socket);
+    char *file_path = altRecvFile(socket);
+    printf("File received\n");
+    printf("fd: %s\n", file_path);
+    free(file_path);
+    close(socket);
+};
+
+void upload_file(char *path, int socket, int option)
+{
+    sendInt(option, socket);
+    altSendFile(path, socket);
+    close(socket);
+};
 
 // TODO: Descobrir o filesize
 // TODO: Criar arquivo em branco com este tamanho

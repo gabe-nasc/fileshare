@@ -50,10 +50,15 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
-client
-server
+./client
+./server
 files/test
 test.txt
 server
 mock_data.xlsx
 client
+
+*.txt*
+.vscode/
+client
+server

@@ -22,18 +22,17 @@ void reply_client(int option, int socket)
         char *str = recvString(socket);
         printf("Received: %s\n", str);
     }
-    // else if (option == 4)
-    // {
-    //     printf("Listing cloud files...\n");
-    //     list_cloud_files();
-    // }
-    // else if (option == 5)
-    // {
-    //     char filename[MAXRCVLEN + 1];
-    //     printf("Enter a filename: ");
-    //     scanf("%s", filename);
-    //     download_file(filename, connection);
-    // }
+    else if (option == 4)
+    {
+        printf("Listing cloud files...\n");
+        send_files_list(".", socket);
+    }
+    else if (option == 5)
+    {
+        char *filename = recvString(socket);
+        printf("Sending %s\n", filename);
+        altSendFile(filename, socket);
+    }
     else if (option == 6)
     {
         char *path = altRecvFile(socket);

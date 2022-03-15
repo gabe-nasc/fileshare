@@ -21,3 +21,9 @@ char *recvFile(int socket);
 
 void altSendFile(char *path, int socket);
 char *altRecvFile(int socket);
+
+void send_files_list(char *path, int socket);
+void list_server_files(int socket);
+
+void download_file(char *path, int socket, int option);
+void upload_file(char *path, int socket, int option);

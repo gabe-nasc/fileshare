@@ -85,18 +85,24 @@ int user_menu(int port)
         printf("Listing local files...\n");
         list_directory(".");
     }
-    // else if (option == 4)
-    // {
-    //     printf("Listing cloud files...\n");
-    //     list_cloud_files();
-    // }
-    // else if (option == 5)
-    // {
-    //     char filename[MAXRCVLEN + 1];
-    //     printf("Enter a filename: ");
-    //     scanf("%s", filename);
-    //     download_file(filename, connection);
-    // }
+    else if (option == 4)
+    {
+        printf("Listing server files...\n");
+        int connection = connect_to_server(port);
+        list_server_files(connection);
+    }
+    else if (option == 5)
+    {
+        char filename[MAXRCVLEN + 1];
+        printf("Enter a filename: ");
+        scanf("%s", filename);
+        int connection = connect_to_server(port);
+        download_file(filename, connection, option);
+        // sendInt(option, connection);
+        // sendString(filename, connection);
+        // char *received_filename = altRecvFile(connection);
+        // printf("Received %s\n", received_filename);
+    }
     else if (option == 6)
     {
         char filename[MAXRCVLEN + 1];
@@ -104,8 +110,9 @@ int user_menu(int port)
         scanf(" %[^\n]%*c", filename);
 
         int connection = connect_to_server(port);
-        sendInt(option, connection);
-        altSendFile(filename, connection);
+        upload_file(filename, connection, option);
+        // sendInt(option, connection);
+        // altSendFile(filename, connection);
 
         close(connection);
     }
