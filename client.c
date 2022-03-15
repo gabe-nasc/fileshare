@@ -105,7 +105,7 @@ int user_menu(int port)
 
         int connection = connect_to_server(port);
         sendInt(option, connection);
-        sendFile(filename, connection);
+        altSendFile(filename, connection);
 
         close(connection);
     }

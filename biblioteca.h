@@ -18,3 +18,6 @@ void write_file(char *path, unsigned char *content);
 
 void sendFile(char *path, int socket);
 char *recvFile(int socket);
+
+void altSendFile(char *path, int socket);
+char *altRecvFile(int socket);

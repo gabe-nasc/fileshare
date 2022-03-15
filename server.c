@@ -36,9 +36,9 @@ void reply_client(int option, int socket)
     // }
     else if (option == 6)
     {
-        char *path = recvFile(socket);
+        char *path = altRecvFile(socket);
         printf("Received: %s\n", path);
-        // printf("Received");
+        // printf("Gabriel\n");
     }
     else if (option == 8)
     {
