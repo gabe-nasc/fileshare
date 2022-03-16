@@ -8,10 +8,27 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <errno.h>
+#include <pthread.h>
 #include "biblioteca.h"
 
-void reply_client(int option, int socket)
+typedef struct ReplyClientArgument_t
 {
+
+    int socket;
+    int option;
+
+} ReplyClientArguments;
+
+// void reply_client(int option, int socket)
+void *reply_client(void *ptr)
+{
+    printf("HEY\n");
+    ReplyClientArguments *arguments = (ReplyClientArguments *)ptr;
+
+    int option = arguments->option;
+    int socket = arguments->socket;
+    printf("DUDE %d\n", option);
+    printf("YEAH %d\n", socket);
     if (option == 1)
     {
         int n = recvInt(socket);
@@ -29,6 +46,7 @@ void reply_client(int option, int socket)
     }
     else if (option == 5)
     {
+        // printf("INSIDE\n");
         char *filename = recvString(socket);
         printf("Sending %s\n", filename);
         altSendFile(filename, socket);
@@ -54,6 +72,9 @@ int start_listening(int port)
 {
     int mysocket;
     struct sockaddr_in dest;
+
+    pthread_t thread[50];
+    int thread_counter = 0;
 
     socklen_t socksize = sizeof(struct sockaddr_in);
 
@@ -90,9 +111,15 @@ int start_listening(int port)
     {
         printf("Incoming connection from %s - sending welcome\n", inet_ntoa(dest.sin_addr));
 
-        reply_client(recvInt(consocket), consocket);
+        // reply_client(recvInt(consocket), consocket);
+        ReplyClientArguments arguments;
+        arguments.socket = consocket;
+        arguments.option = recvInt(consocket);
 
-        close(consocket);
+        pthread_create(&thread[thread_counter], NULL, reply_client, (void *)&arguments);
+        thread_counter += 1;
+
+        // close(consocket);
         consocket = accept(mysocket, (struct sockaddr *)&dest, &socksize);
     }
 

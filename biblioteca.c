@@ -11,10 +11,20 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <dirent.h>
+#include <pthread.h>
 
 #include "biblioteca.h"
 
 #define BUFFER_SIZE 500
+
+typedef struct DownloadArgument_t
+{
+
+    int socket;
+    int option;
+    char *filename;
+
+} DownloadArguments;
 
 unsigned char *get_array_slice(unsigned char *array, int start, int end)
 {
@@ -311,15 +321,24 @@ char *altRecvFile(int socket)
     return file_path;
 };
 
-void download_file(char *path, int socket, int option)
+// char *path, int socket, int option
+void *download_file(void *ptr)
 {
-    sendInt(option, socket);
-    sendString(path, socket);
-    char *file_path = altRecvFile(socket);
+    DownloadArguments *args = (DownloadArguments *)ptr;
+
+    printf("Downloading file %s\n", args->filename);
+    sendInt(args->option, args->socket);
+    printf("Sent option\n");
+    sendString(args->filename, args->socket);
+    printf("Sent filename\n");
+    printf("SOQUETE: %d\n", args->socket);
+    char *file_path = altRecvFile(args->socket);
     printf("File received\n");
     printf("fd: %s\n", file_path);
     free(file_path);
-    close(socket);
+    close(args->socket);
+
+    return (void *)NULL;
 };
 
 void upload_file(char *path, int socket, int option)

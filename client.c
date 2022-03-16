@@ -7,9 +7,19 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <errno.h>
+#include <pthread.h>
 #include "biblioteca.h"
 
 #define MAXRCVLEN 500
+
+typedef struct DownloadArgument_t
+{
+
+    int socket;
+    int option;
+    char *filename;
+
+} DownloadArguments;
 
 int connect_to_server(int port)
 {
@@ -43,6 +53,9 @@ int user_menu(int port)
     printf("Choose an option:\n1 - Send Integer\n2 - Send String\n3 - List Local Files\n4 - List Cloud Files\n5 - Download File\n6 - Upload File\n7 - Exit\n8 - Void\n");
     int option;
     scanf("%d", &option);
+
+    pthread_t threads[50];
+    int thread_counter = 0;
 
     if (option < 1 || option > 8)
     {
@@ -97,7 +110,15 @@ int user_menu(int port)
         printf("Enter a filename: ");
         scanf("%s", filename);
         int connection = connect_to_server(port);
-        download_file(filename, connection, option);
+
+        DownloadArguments arg;
+        arg.socket = connection;
+        arg.option = option;
+        arg.filename = filename;
+
+        pthread_create(&threads[thread_counter], NULL, download_file, (void *)&arg);
+        thread_counter += 1;
+        // download_file(filename, connection, option);
         // sendInt(option, connection);
         // sendString(filename, connection);
         // char *received_filename = altRecvFile(connection);
