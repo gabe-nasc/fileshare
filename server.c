@@ -22,13 +22,13 @@ typedef struct ReplyClientArgument_t
 // void reply_client(int option, int socket)
 void *reply_client(void *ptr)
 {
-    printf("HEY\n");
+    // printf("HEY\n");
     ReplyClientArguments *arguments = (ReplyClientArguments *)ptr;
 
     int option = arguments->option;
     int socket = arguments->socket;
-    printf("DUDE %d\n", option);
-    printf("YEAH %d\n", socket);
+    // printf("DUDE %d\n", option);
+    // printf("YEAH %d\n", socket);
     if (option == 1)
     {
         int n = recvInt(socket);
@@ -48,7 +48,6 @@ void *reply_client(void *ptr)
     {
         // printf("INSIDE\n");
         char *filename = recvString(socket);
-        printf("Sending %s\n", filename);
         altSendFile(filename, socket);
     }
     else if (option == 6)

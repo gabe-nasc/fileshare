@@ -276,7 +276,7 @@ void altSendFile(char *path, int socket)
     for (size_t i = 0; i < nslices; i++)
     {
         pread(file, content_slice, BUFFER_SIZE, BUFFER_SIZE * i);
-        printf("Sending slice %ld\n", i);
+        // printf("Sending slice %ld\n", i);
         sendInt(i, socket);
         sendVoid(content_slice, BUFFER_SIZE, socket);
     }
@@ -296,7 +296,7 @@ char *altRecvFile(int socket)
     int file = open(file_path, O_CREAT | O_RDWR, S_IRWXU);
     for (size_t i = 0; i < nslices; i++)
     {
-        printf("Receiving slice %ld\n", i);
+        // printf("Receiving slice %ld\n", i);
         int slice_n = recvInt(socket);
         void *content_slice = recvVoid(socket);
 
@@ -311,7 +311,7 @@ char *altRecvFile(int socket)
         else
         {
             pwrite(file, content_slice, BUFFER_SIZE, BUFFER_SIZE * slice_n);
-            printf("Slice written\n");
+            // printf("Slice written\n");
         }
     }
     printf("File received\n");

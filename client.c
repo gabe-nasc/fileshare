@@ -54,7 +54,7 @@ int user_menu(int port)
     int option;
     scanf("%d", &option);
 
-    pthread_t threads[50];
+    pthread_t threads[10];
     int thread_counter = 0;
 
     if (option < 1 || option > 8)
