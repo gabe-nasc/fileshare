@@ -161,7 +161,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        int port = atoi(argv[1]);
+        port = atoi(argv[1]);
     }
 
     int option = 0;

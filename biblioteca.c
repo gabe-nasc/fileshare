@@ -164,7 +164,7 @@ void send_files_list(char *path, int socket)
     DIR *dir;
     struct dirent *ent;
 
-    int files_count = 0;
+    int files_count = 0; // . and .. count
     if ((dir = opendir(path)) != NULL)
     {
         while ((ent = readdir(dir)) != NULL)
@@ -183,13 +183,17 @@ void send_files_list(char *path, int socket)
     }
 
     sendInt(files_count, socket);
+    printf("Files: %d", files_count);
 
     if ((dir = opendir(path)) != NULL)
     {
         while ((ent = readdir(dir)) != NULL)
         {
-            printf("%s\n", ent->d_name);
-            sendVoid(ent->d_name, strlen(ent->d_name) * sizeof(char), socket);
+            if (ent->d_type == DT_REG)
+            {
+                printf("%s\n", ent->d_name);
+                sendVoid(ent->d_name, strlen(ent->d_name) * sizeof(char), socket);
+            }
         }
         closedir(dir);
         sendVoid(0, sizeof(int), socket);
@@ -254,10 +258,10 @@ void altSendFile(char *path, int socket)
         void *content_slice = (void *)calloc(BUFFER_SIZE + 1, sizeof(void));
 
         pread(file, content_slice, BUFFER_SIZE, BUFFER_SIZE * i);
-        if (i % 1000 == 0)
-        {
-            printf("Sending slice %ld\n", i);
-        }
+        // if (i % 1000 == 0)
+        // {
+        //     // printf("Sending slice %ld\n", i);
+        // }
         sendInt(i, socket);
         sendVoid(content_slice, BUFFER_SIZE, socket);
 
@@ -279,10 +283,10 @@ char *altRecvFile(int socket)
     int file = open(file_path, O_CREAT | O_RDWR, S_IRWXU);
     for (size_t i = 0; i < nslices; i++)
     {
-        if (i % 1000 == 0)
-        {
-            printf("Receiving slice %ld\n", i);
-        }
+        // if (i % 1000 == 0)
+        // {
+        //     printf("Receiving slice %ld\n", i);
+        // }
 
         int slice_n = recvInt(socket);
         void *content_slice = recvVoid(socket);
