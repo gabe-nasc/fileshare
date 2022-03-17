@@ -17,15 +17,6 @@
 
 #define BUFFER_SIZE 500
 
-typedef struct DownloadArgument_t
-{
-
-    int socket;
-    int option;
-    char *filename;
-
-} DownloadArguments;
-
 unsigned char *get_array_slice(unsigned char *array, int start, int end)
 {
     unsigned char *slice = (unsigned char *)calloc(BUFFER_SIZE, sizeof(unsigned char));
@@ -223,19 +214,6 @@ void list_server_files(int socket)
     }
 };
 
-void write_file(char *path, unsigned char *content)
-{
-    FILE *file = fopen(path, "w");
-    if (file == NULL)
-    {
-        perror("Oops! File could not be opened.\n");
-        return;
-    }
-
-    fwrite(content, 1, strlen(content), file);
-
-    fclose(file);
-};
 // Will use pread instead of fread to read file contents because fread will read the whole file into memory
 // and pread will read the file contents in chunks, also, fread is not thread safe
 void altSendFile(char *path, int socket)
@@ -252,14 +230,11 @@ void altSendFile(char *path, int socket)
 
     fseek(file_tmp, 0, SEEK_END);
     unsigned int nbytes = ftell(file_tmp);
-    printf("Size: %d\n", nbytes);
+    printf("Size: %i\n", nbytes);
     pclose(file_tmp);
 
     // Send file path to receiver
     sendString(path, socket);
-
-    // Allocate memory for a slice of the file contents, the size of the slice is determined by BUFFER_SIZE
-    void *content_slice = (void *)calloc(BUFFER_SIZE + 1, sizeof(void));
 
     // Calculate number of slices
     unsigned int nslices = (nbytes / BUFFER_SIZE) + 1;
@@ -275,10 +250,18 @@ void altSendFile(char *path, int socket)
     // For each slice, send slice to receiver
     for (size_t i = 0; i < nslices; i++)
     {
+        // Allocate memory for a slice of the file contents, the size of the slice is determined by BUFFER_SIZE
+        void *content_slice = (void *)calloc(BUFFER_SIZE + 1, sizeof(void));
+
         pread(file, content_slice, BUFFER_SIZE, BUFFER_SIZE * i);
-        // printf("Sending slice %ld\n", i);
+        if (i % 500 == 0)
+        {
+            printf("Sending slice %ld\n", i);
+        }
         sendInt(i, socket);
         sendVoid(content_slice, BUFFER_SIZE, socket);
+
+        free(content_slice);
     }
 
     close(file);
@@ -296,14 +279,18 @@ char *altRecvFile(int socket)
     int file = open(file_path, O_CREAT | O_RDWR, S_IRWXU);
     for (size_t i = 0; i < nslices; i++)
     {
-        // printf("Receiving slice %ld\n", i);
+        if (i % 500 == 0)
+        {
+            printf("Receiving slice %ld\n", i);
+        }
+
         int slice_n = recvInt(socket);
         void *content_slice = recvVoid(socket);
 
         if (i == nslices - 1)
         {
             printf("Writing last slice\n");
-            printf("Size: %d\n", totalFileSize % BUFFER_SIZE);
+            printf("Size: %i\n", totalFileSize % BUFFER_SIZE);
             ssize_t response = pwrite(file, content_slice, totalFileSize % BUFFER_SIZE, BUFFER_SIZE * slice_n);
             printf("Response: %ld\n", response);
             printf("Slice written\n");
@@ -313,6 +300,8 @@ char *altRecvFile(int socket)
             pwrite(file, content_slice, BUFFER_SIZE, BUFFER_SIZE * slice_n);
             // printf("Slice written\n");
         }
+
+        free(content_slice);
     }
     printf("File received\n");
     printf("fd: %d\n", file);
@@ -327,14 +316,14 @@ void *download_file(void *ptr)
     DownloadArguments *args = (DownloadArguments *)ptr;
 
     printf("Downloading file %s\n", args->filename);
+
     sendInt(args->option, args->socket);
-    printf("Sent option\n");
     sendString(args->filename, args->socket);
-    printf("Sent filename\n");
-    printf("SOQUETE: %d\n", args->socket);
+
     char *file_path = altRecvFile(args->socket);
-    printf("File received\n");
-    printf("fd: %s\n", file_path);
+
+    printf("File %s received\n", file_path);
+
     free(file_path);
     close(args->socket);
 

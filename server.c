@@ -19,16 +19,14 @@ typedef struct ReplyClientArgument_t
 
 } ReplyClientArguments;
 
-// void reply_client(int option, int socket)
+// Receives a message from the client and replies appropriately
 void *reply_client(void *ptr)
 {
-    // printf("HEY\n");
     ReplyClientArguments *arguments = (ReplyClientArguments *)ptr;
 
     int option = arguments->option;
     int socket = arguments->socket;
-    // printf("DUDE %d\n", option);
-    // printf("YEAH %d\n", socket);
+
     if (option == 1)
     {
         int n = recvInt(socket);
@@ -38,10 +36,11 @@ void *reply_client(void *ptr)
     {
         char *str = recvString(socket);
         printf("Received: %s\n", str);
+        free(str);
     }
     else if (option == 4)
     {
-        printf("Listing cloud files...\n");
+        printf("Listing server files...\n");
         send_files_list(".", socket);
     }
     else if (option == 5)
@@ -49,12 +48,13 @@ void *reply_client(void *ptr)
         // printf("INSIDE\n");
         char *filename = recvString(socket);
         altSendFile(filename, socket);
+        free(filename);
     }
     else if (option == 6)
     {
         char *path = altRecvFile(socket);
         printf("Received: %s\n", path);
-        // printf("Gabriel\n");
+        free(path);
     }
     else if (option == 8)
     {
@@ -77,10 +77,10 @@ int start_listening(int port)
 
     socklen_t socksize = sizeof(struct sockaddr_in);
 
-    memset(&dest, 0, sizeof(dest)); /* zero the struct */
+    memset(&dest, 0, sizeof(dest));
     dest.sin_family = AF_INET;
-    dest.sin_addr.s_addr = htonl(INADDR_ANY); /* set destination IP number - localhost, */
-    dest.sin_port = htons(port);              /* set destination port number */
+    dest.sin_addr.s_addr = htonl(INADDR_ANY);
+    dest.sin_port = htons(port);
 
     mysocket = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -106,20 +106,31 @@ int start_listening(int port)
 
     int consocket = accept(mysocket, (struct sockaddr *)&dest, &socksize);
 
+    // For each client, create a thread to handle the client
+    // Keep listening for clients
     while (consocket)
     {
         printf("Incoming connection from %s - sending welcome\n", inet_ntoa(dest.sin_addr));
 
-        // reply_client(recvInt(consocket), consocket);
         ReplyClientArguments arguments;
         arguments.socket = consocket;
         arguments.option = recvInt(consocket);
 
+        if (arguments.option == 10)
+        {
+            printf("Server Shutdown Requested\n");
+            break;
+        }
+
         pthread_create(&thread[thread_counter], NULL, reply_client, (void *)&arguments);
         thread_counter += 1;
 
-        // close(consocket);
         consocket = accept(mysocket, (struct sockaddr *)&dest, &socksize);
+    }
+
+    for (size_t i = 0; i < thread_counter; i++)
+    {
+        pthread_join(thread[i], NULL);
     }
 
     close(mysocket);
@@ -137,8 +148,6 @@ int main(int argc, char *argv[])
     {
         port = atoi(argv[1]);
     }
-
-    char *msg[5] = {"Msg1\n", "Msg2\n", "Msg3\n", "Msg4\n", "Msg5\n"};
 
     srand(time(NULL));
 

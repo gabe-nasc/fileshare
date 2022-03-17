@@ -1,3 +1,13 @@
+
+typedef struct DownloadArgument_t
+{
+
+    int socket;
+    int option;
+    char *filename;
+
+} DownloadArguments;
+
 void sendInt(int number, int socket);
 int recvInt(int socket);
 

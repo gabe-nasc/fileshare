@@ -12,15 +12,6 @@
 
 #define MAXRCVLEN 500
 
-typedef struct DownloadArgument_t
-{
-
-    int socket;
-    int option;
-    char *filename;
-
-} DownloadArguments;
-
 int connect_to_server(int port)
 {
     char buffer[MAXRCVLEN + 1]; /* +1 so we can add null terminator */
@@ -50,23 +41,19 @@ int connect_to_server(int port)
 
 int user_menu(int port)
 {
-    printf("Choose an option:\n1 - Send Integer\n2 - Send String\n3 - List Local Files\n4 - List Cloud Files\n5 - Download File\n6 - Upload File\n7 - Exit\n8 - Void\n");
+    printf("Choose an option:\n3 - List Local Files\n4 - List Cloud Files\n5 - Download File\n6 - Upload File\n7 - Exit\n10 - Shutdown Server\n");
     int option;
     scanf("%d", &option);
 
     pthread_t threads[10];
     int thread_counter = 0;
 
-    if (option < 1 || option > 8)
-    {
-        printf("Invalid option\n");
-        return -1;
-    }
-
+    // Close client
     if (option == 7)
     {
         printf("Exiting...\n");
     }
+    // Send integer to server
     else if (option == 1)
     {
         int n;
@@ -80,6 +67,7 @@ int user_menu(int port)
 
         printf("Sent %d\n", n);
     }
+    // Send string to server
     else if (option == 2)
     {
         char str[MAXRCVLEN + 1];
@@ -93,17 +81,20 @@ int user_menu(int port)
 
         printf("Sent %s\n", str);
     }
+    // Show local files
     else if (option == 3)
     {
         printf("Listing local files...\n");
         list_directory(".");
     }
+    // Receive a list of files available in the server
     else if (option == 4)
     {
         printf("Listing server files...\n");
         int connection = connect_to_server(port);
         list_server_files(connection);
     }
+    // Download file from the server
     else if (option == 5)
     {
         char filename[MAXRCVLEN + 1];
@@ -118,12 +109,8 @@ int user_menu(int port)
 
         pthread_create(&threads[thread_counter], NULL, download_file, (void *)&arg);
         thread_counter += 1;
-        // download_file(filename, connection, option);
-        // sendInt(option, connection);
-        // sendString(filename, connection);
-        // char *received_filename = altRecvFile(connection);
-        // printf("Received %s\n", received_filename);
     }
+    // Upload file from the server
     else if (option == 6)
     {
         char filename[MAXRCVLEN + 1];
@@ -132,12 +119,10 @@ int user_menu(int port)
 
         int connection = connect_to_server(port);
         upload_file(filename, connection, option);
-        // sendInt(option, connection);
-        // altSendFile(filename, connection);
 
         close(connection);
     }
-
+    // Send Void to server
     else if (option == 8)
     {
         int n;
@@ -148,6 +133,18 @@ int user_menu(int port)
         sendInt(option, connection);
         sendVoid(&n, sizeof(int), connection);
         close(connection);
+    }
+    // Shutdown server
+    else if (option == 10)
+    {
+        int connection = connect_to_server(port);
+        sendInt(option, connection);
+        close(connection);
+    }
+    else
+    {
+        printf("Invalid option\n");
+        return -1;
     }
 
     return option;
