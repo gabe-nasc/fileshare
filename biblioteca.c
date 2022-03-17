@@ -254,7 +254,7 @@ void altSendFile(char *path, int socket)
         void *content_slice = (void *)calloc(BUFFER_SIZE + 1, sizeof(void));
 
         pread(file, content_slice, BUFFER_SIZE, BUFFER_SIZE * i);
-        if (i % 500 == 0)
+        if (i % 1000 == 0)
         {
             printf("Sending slice %ld\n", i);
         }
@@ -279,7 +279,7 @@ char *altRecvFile(int socket)
     int file = open(file_path, O_CREAT | O_RDWR, S_IRWXU);
     for (size_t i = 0; i < nslices; i++)
     {
-        if (i % 500 == 0)
+        if (i % 1000 == 0)
         {
             printf("Receiving slice %ld\n", i);
         }
